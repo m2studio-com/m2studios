@@ -82,7 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     if (!isConfigValid || !auth) {
-      throw new Error("Firebase is not configured. Please ensure all Firebase environment variables are set correctly.")
+      const err: any = new Error("Firebase is not configured or Auth service is unavailable.")
+      err.code = "auth/no-auth-instance"
+      throw err
     }
 
     try {
@@ -144,7 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!isConfigValid || !auth || !db) {
-      throw new Error("Firebase is not configured. Please ensure all Firebase environment variables are set correctly.")
+      const err: any = new Error("Firebase is not configured or Auth service is unavailable.")
+      err.code = "auth/no-auth-instance"
+      throw err
     }
 
     try {

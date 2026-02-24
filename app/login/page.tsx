@@ -79,6 +79,10 @@ export default function AuthPage() {
     } catch (err: any) {
       if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
         setError("Invalid email or password. Please try again.")
+      } else if (err.code === "auth/no-auth-instance") {
+        setError("Authentication service unavailable. Check Firebase configuration.")
+      } else {
+        setError(err.message || "Failed to sign in. Please try again.")
       }
     } finally {
       setIsLoading(false)

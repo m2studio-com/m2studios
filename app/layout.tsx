@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { FloatingButtons } from "@/components/floating-buttons"
-import { AuthProvider } from "@/lib/auth-context"
+import { ClientProviders } from "@/components/client-providers"
 import { Navigation } from "@/components/navigation"
 import "./globals.css"
 
@@ -135,12 +135,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
-        <AuthProvider>
+        <ClientProviders>
           <Navigation />
           <ScrollToTop />
           <FloatingButtons />
           <main className="page-transition">{children}</main>
-        </AuthProvider>
+        </ClientProviders>
         <Analytics />
       </body>
     </html>

@@ -11,7 +11,7 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth"
 import { doc, getDoc, setDoc } from "firebase/firestore"
-import { auth, db, isConfigValid, googleProvider } from "./firebase"
+import { auth, db, isConfigValid, getGoogleProvider } from "./firebase"
 
 // User type
 interface User {
@@ -151,6 +151,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw err
     }
 
+    const googleProvider = getGoogleProvider()
+    if (!googleProvider) {
+      console.error("[Auth] Google provider is null after getGoogleProvider()")
+      const err: any = new Error("Google authentication is not available. Try refreshing the page.")
+      err.code = "auth/argument-error"
+      throw err
+    }
+
     try {
       const result = await signInWithPopup(auth, googleProvider)
       const user = result.user
@@ -177,6 +185,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Sign-in was cancelled. Please try again.")
       } else if (error.code === "auth/network-request-failed") {
         throw new Error("Network error. Please check your internet connection.")
+      } else if (error.code === "auth/argument-error") {
+        throw new Error("Google sign-in configuration error. Please refresh the page and try again.")
       } else {
         throw new Error(error.message || "Failed to sign in with Google. Please try again.")
       }

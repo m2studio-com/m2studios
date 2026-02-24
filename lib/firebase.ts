@@ -8,6 +8,7 @@ let auth: any = null
 let storage: any = null
 let db: any = null
 let googleProvider: any = null
+let googleProviderAvailable = false
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
@@ -16,6 +17,18 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+}
+
+// Normalize common storageBucket values (some envs use `.firebasestorage.app`)
+if (firebaseConfig.storageBucket && firebaseConfig.storageBucket.endsWith(".firebasestorage.app")) {
+  try {
+    firebaseConfig.storageBucket = firebaseConfig.storageBucket.replace(".firebasestorage.app", ".appspot.com")
+    // keep a console hint for debugging
+    // eslint-disable-next-line no-console
+    console.info("[Firebase] Normalized storageBucket to:", firebaseConfig.storageBucket)
+  } catch (e) {
+    // ignore
+  }
 }
 
 // Validate Firebase configuration (non-blocking)
@@ -74,9 +87,11 @@ if (typeof window !== "undefined") {
 
     try {
       googleProvider = new GoogleAuthProvider()
+      googleProviderAvailable = true
     } catch (err) {
       console.warn("[Firebase] GoogleAuthProvider initialization failed:", err)
       googleProvider = null
+      googleProviderAvailable = false
     }
 
     // Connect to local emulators when enabled (useful for local testing)
@@ -111,6 +126,41 @@ if (typeof window !== "undefined") {
     db = null
     googleProvider = null
   }
+}
+
+// Helper to lazily initialize googleProvider if it's null (for resilience)
+export function getGoogleProvider() {
+  if (googleProvider && googleProviderAvailable) return googleProvider
+
+  if (typeof window === "undefined") {
+    console.warn("[Firebase] Cannot get Google provider: not in browser")
+    return null
+  }
+
+  try {
+    console.info("[Firebase] Attempting to initialize Google provider on-demand...")
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { GoogleAuthProvider } = require("firebase/auth")
+    if (!GoogleAuthProvider) {
+      console.error("[Firebase] GoogleAuthProvider class not found in firebase/auth")
+      googleProviderAvailable = false
+      return null
+    }
+    console.info("[Firebase] Creating new GoogleAuthProvider instance...")
+    googleProvider = new GoogleAuthProvider()
+    googleProviderAvailable = true
+    console.info("[Firebase] Google provider initialized on-demand successfully")
+    return googleProvider
+  } catch (err) {
+    console.error("[Firebase] Failed to initialize Google provider on-demand:", err, (err as any)?.message || "")
+    googleProvider = null
+    googleProviderAvailable = false
+    return null
+  }
+}
+
+export function isGoogleProviderAvailable() {
+  return googleProviderAvailable || !!googleProvider
 }
 
 export { auth, storage, db, isConfigValid, googleProvider }

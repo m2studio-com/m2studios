@@ -6,6 +6,7 @@ import { ScrollToTop } from "@/components/scroll-to-top"
 import { FloatingButtons } from "@/components/floating-buttons"
 import { ClientProviders } from "@/components/client-providers"
 import { Navigation } from "@/components/navigation"
+import { ConfigWarning } from "@/components/config-warning"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -137,6 +138,8 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ClientProviders>
           <Navigation />
+          {/* Show a visible warning when Firebase client config is missing */}
+          <ConfigWarning />
           <ScrollToTop />
           <FloatingButtons />
           <main className="page-transition">{children}</main>

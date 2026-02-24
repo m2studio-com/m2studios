@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { isConfigValid } from "@/lib/firebase"
+import { isConfigValid, isGoogleProviderAvailable } from "@/lib/firebase"
 
 export default function AuthPage() {
   const router = useRouter()
@@ -18,6 +18,7 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [logoutSuccess, setLogoutSuccess] = useState(false)
+  const [googleAvailable] = useState(() => isGoogleProviderAvailable())
 
   useEffect(() => {
     if (!isConfigValid) {
@@ -130,6 +131,11 @@ export default function AuthPage() {
   const handleGoogleLogin = async () => {
     if (!isConfigValid) {
       setError("Cannot sign in: Firebase is not configured properly.")
+      return
+    }
+
+    if (!googleAvailable) {
+      setError("Google sign-in is currently unavailable. Please use email/password to sign in instead.")
       return
     }
 

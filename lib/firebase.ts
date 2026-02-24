@@ -36,47 +36,81 @@ if (!isConfigValid && typeof window !== "undefined") {
 }
 
 if (typeof window !== "undefined") {
-  // Import browser-only parts inside the client block to avoid server-side
-  // initialization errors during SSR or in API routes.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { getAuth, browserSessionPersistence, setPersistence, GoogleAuthProvider } = require("firebase/auth")
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { getStorage } = require("firebase/storage")
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { getFirestore, connectFirestoreEmulator } = require("firebase/firestore")
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { connectAuthEmulator } = require("firebase/auth")
-
-  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
-  auth = getAuth(app)
-  storage = getStorage(app)
-  db = getFirestore(app)
-  googleProvider = new GoogleAuthProvider()
-
-  // Connect to local emulators when enabled (useful for local testing)
   try {
-    if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
-      // Default emulator hosts and ports
-      const firestoreHost = process.env.FIRESTORE_EMULATOR_HOST || "localhost:8080"
-      const authEmulatorUrl = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL || "http://localhost:9099"
+    // Import browser-only parts inside the client block to avoid server-side
+    // initialization errors during SSR or in API routes.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getAuth, browserSessionPersistence, setPersistence, GoogleAuthProvider } = require("firebase/auth")
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getStorage } = require("firebase/storage")
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getFirestore, connectFirestoreEmulator } = require("firebase/firestore")
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { connectAuthEmulator } = require("firebase/auth")
 
-      // connectFirestoreEmulator expects (db, host, port)
-      const [host, portStr] = firestoreHost.split(":")
-      const port = parseInt(portStr || "8080", 10)
-      connectFirestoreEmulator(db, host, port)
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-      // connectAuthEmulator expects (auth, url)
-      connectAuthEmulator(auth, authEmulatorUrl)
-
-      console.info("[Firebase] Connected to emulators:", { firestoreHost, authEmulatorUrl })
+    try {
+      auth = getAuth(app)
+    } catch (err) {
+      console.warn("[Firebase] getAuth failed:", err)
+      auth = null
     }
-  } catch (emErr) {
-    console.warn("[Firebase] Could not connect to emulators:", emErr)
-  }
 
-  setPersistence(auth, browserSessionPersistence).catch((error: any) => {
-    console.error("[Firebase] Error setting session persistence:", error)
-  })
+    try {
+      // getStorage may throw in environments where storage service isn't available
+      storage = getStorage ? getStorage(app) : null
+    } catch (err) {
+      console.warn("[Firebase] getStorage failed or storage not available:", err)
+      storage = null
+    }
+
+    try {
+      db = getFirestore(app)
+    } catch (err) {
+      console.warn("[Firebase] getFirestore failed:", err)
+      db = null
+    }
+
+    try {
+      googleProvider = new GoogleAuthProvider()
+    } catch (err) {
+      console.warn("[Firebase] GoogleAuthProvider initialization failed:", err)
+      googleProvider = null
+    }
+
+    // Connect to local emulators when enabled (useful for local testing)
+    try {
+      if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" && db && auth) {
+        const firestoreHost = process.env.FIRESTORE_EMULATOR_HOST || "localhost:8080"
+        const authEmulatorUrl = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL || "http://localhost:9099"
+        const [host, portStr] = firestoreHost.split(":")
+        const port = parseInt(portStr || "8080", 10)
+        connectFirestoreEmulator(db, host, port)
+        connectAuthEmulator(auth, authEmulatorUrl)
+        console.info("[Firebase] Connected to emulators:", { firestoreHost, authEmulatorUrl })
+      }
+    } catch (emErr) {
+      console.warn("[Firebase] Could not connect to emulators:", emErr)
+    }
+
+    // Set session persistence if auth is available
+    if (auth && typeof setPersistence === "function") {
+      setPersistence(auth, browserSessionPersistence).catch((error: any) => {
+        console.error("[Firebase] Error setting session persistence:", error)
+      })
+    }
+  } catch (initErr) {
+    // Defensive: any failure during client initialization should not crash module evaluation
+    // This avoids the black screen by allowing the app to render and surface errors in console.
+    // eslint-disable-next-line no-console
+    console.error("[Firebase] Client initialization error (non-fatal):", initErr)
+    app = null
+    auth = null
+    storage = null
+    db = null
+    googleProvider = null
+  }
 }
 
 export { auth, storage, db, isConfigValid, googleProvider }

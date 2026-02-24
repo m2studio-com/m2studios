@@ -9,6 +9,7 @@ export interface UploadProgress {
 
 export async function uploadFile(file: File, path: string, onProgress?: (progress: number) => void): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (!storage) return reject(new Error("[Firebase] Storage service is not available"))
     const storageRef = ref(storage, path)
     const uploadTask = uploadBytesResumable(storageRef, file)
 
@@ -33,6 +34,7 @@ export async function uploadFile(file: File, path: string, onProgress?: (progres
 
 export async function deleteFile(filePath: string): Promise<void> {
   try {
+    if (!storage) throw new Error("[Firebase] Storage service is not available")
     const storageRef = ref(storage, filePath)
     await deleteObject(storageRef)
   } catch (error) {

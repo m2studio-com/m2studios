@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -11,9 +11,8 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth"
 import { doc, getDoc, setDoc } from "firebase/firestore"
-import { auth, db, isConfigValid, getGoogleProvider } from "./firebase"
+import { auth, db, googleProvider, isConfigValid } from "./firebase"
 
-// User type
 interface User {
   uid: string
   email: string | null
@@ -23,7 +22,6 @@ interface User {
   provider?: string
 }
 
-// Auth context type
 interface AuthContextType {
   user: User | null
   loading: boolean
@@ -40,37 +38,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isConfigValid || !auth) {
-      console.error("[Auth] Firebase is not properly configured. Please check environment variables.")
+    if (!isConfigValid) {
+      console.error("Firebase not configured.")
       setLoading(false)
       return
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        try {
-          if (!db) {
-            console.error("[Firebase] Firestore is not configured.")
-            setUser(null)
-            setLoading(false)
-            return
-          }
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+        const userData = userDoc.data()
 
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
-          const userData = userDoc.data()
-
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            role: userData?.role || "client",
-            photoURL: userData?.photoURL,
-            provider: userData?.provider,
-          })
-        } catch (error) {
-          console.error("[Firebase] Error fetching user data:", error)
-          setUser(null)
-        }
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          role: userData?.role || "client",
+          photoURL: userData?.photoURL,
+          provider: userData?.provider,
+        })
       } else {
         setUser(null)
       }
@@ -81,150 +67,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    if (!isConfigValid || !auth) {
-      const err: any = new Error("Firebase is not configured or Auth service is unavailable.")
-      err.code = "auth/no-auth-instance"
-      throw err
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password)
-    } catch (error: any) {
-      console.error("[v0] Firebase sign in error:", error.code, error.message)
-      if (error.code === "auth/user-not-found") {
-        throw new Error("No account found with this email address.")
-      } else if (error.code === "auth/wrong-password") {
-        throw new Error("Incorrect password. Please try again.")
-      } else if (error.code === "auth/invalid-email") {
-        throw new Error("Invalid email address format.")
-      } else if (error.code === "auth/user-disabled") {
-        throw new Error("This account has been disabled.")
-      } else if (error.code === "auth/too-many-requests") {
-        throw new Error("Too many failed attempts. Please try again later.")
-      } else if (error.code === "auth/invalid-credential") {
-        throw new Error("Invalid email or password. Please check your credentials.")
-      } else if (error.code === "auth/network-request-failed") {
-        throw new Error("Network error. Please check your internet connection.")
-      } else {
-        throw new Error(error.message || "Failed to sign in. Please try again.")
-      }
-    }
+    await signInWithEmailAndPassword(auth, email, password)
   }
 
   const signUp = async (email: string, password: string, name: string) => {
-    if (!isConfigValid || !auth || !db) {
-      throw new Error("Firebase is not configured. Please ensure all Firebase environment variables are set correctly.")
-    }
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+    const user = userCredential.user
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      const user = userCredential.user
+    await updateProfile(user, { displayName: name })
 
-      await updateProfile(user, { displayName: name })
-
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        displayName: name,
-        role: "client",
-        createdAt: new Date().toISOString(),
-      })
-    } catch (error: any) {
-      console.error("[v0] Firebase sign up error:", error.code, error.message)
-      if (error.code === "auth/email-already-in-use") {
-        throw new Error("This email is already registered. Please sign in instead.")
-      } else if (error.code === "auth/invalid-email") {
-        throw new Error("Invalid email address format.")
-      } else if (error.code === "auth/weak-password") {
-        throw new Error("Password is too weak. Please use at least 6 characters.")
-      } else if (error.code === "auth/network-request-failed") {
-        throw new Error("Network error. Please check your internet connection.")
-      } else {
-        throw new Error(error.message || "Failed to create account. Please try again.")
-      }
-    }
+    await setDoc(doc(db, "users", user.uid), {
+      email: user.email,
+      displayName: name,
+      role: "client",
+      createdAt: new Date().toISOString(),
+    })
   }
 
   const signInWithGoogle = async () => {
-    if (!isConfigValid || !auth || !db) {
-      const err: any = new Error("Firebase is not configured or Auth service is unavailable.")
-      err.code = "auth/no-auth-instance"
-      throw err
-    }
+    const result = await signInWithPopup(auth, googleProvider)
+    const user = result.user
 
-    const googleProvider = getGoogleProvider()
-    if (!googleProvider) {
-      console.error("[Auth] Google provider is null after getGoogleProvider()")
-      const err: any = new Error("Google authentication is not available. Try refreshing the page.")
-      err.code = "auth/argument-error"
-      throw err
-    }
-
-    try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const user = result.user
-
-      // Check if user document exists, if not create it
-      const userDoc = await getDoc(doc(db, "users", user.uid))
-      if (!userDoc.exists()) {
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          role: "client",
-          createdAt: new Date().toISOString(),
-          provider: "google",
-        })
-      }
-    } catch (error: any) {
-      console.error("[Firebase] Google sign in error:", error.code, error.message)
-      if (error.code === "auth/popup-closed-by-user") {
-        throw new Error("Sign-in popup was closed. Please try again.")
-      } else if (error.code === "auth/popup-blocked") {
-        throw new Error("Sign-in popup was blocked. Please allow popups for this site.")
-      } else if (error.code === "auth/cancelled-popup-request") {
-        throw new Error("Sign-in was cancelled. Please try again.")
-      } else if (error.code === "auth/network-request-failed") {
-        throw new Error("Network error. Please check your internet connection.")
-      } else if (error.code === "auth/argument-error") {
-        throw new Error("Google sign-in configuration error. Please refresh the page and try again.")
-      } else {
-        throw new Error(error.message || "Failed to sign in with Google. Please try again.")
-      }
+    const userDoc = await getDoc(doc(db, "users", user.uid))
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        role: "client",
+        createdAt: new Date().toISOString(),
+        provider: "google",
+      })
     }
   }
 
   const signOut = async () => {
-    if (!auth) {
-      throw new Error("Firebase Auth is not configured.")
-    }
-
-    try {
-      await firebaseSignOut(auth)
-      setUser(null)
-
-      // Clear caches safely
-      if (typeof window !== "undefined") {
-        try {
-          if ("caches" in window) {
-            const cacheNames = await caches.keys()
-            await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)))
-          }
-        } catch (cacheError) {
-          console.warn("[Cache] Could not clear caches:", cacheError)
-        }
-
-        // Clear storage
-        try {
-          localStorage.clear()
-          sessionStorage.clear()
-        } catch (storageError) {
-          console.warn("[Storage] Could not clear storage:", storageError)
-        }
-      }
-    } catch (error: any) {
-      console.error("[Firebase] Sign out error:", error)
-      throw new Error(error.message || "Failed to sign out")
-    }
+    await firebaseSignOut(auth)
+    setUser(null)
   }
 
   return (
@@ -236,8 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider")
   }
   return context
 }

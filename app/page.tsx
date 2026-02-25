@@ -187,6 +187,14 @@ export default function HomePage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [roadmapInView, setRoadmapInView] = useState(false)
 
+  // Fraction of the progress line to fill (0..1). Use (activeSteps-1)/(totalSteps-1)
+  // so the line grows between nodes rather than jumping with the node count.
+  const filledRatio = (() => {
+    if (roadmapSteps.length <= 1) return 0
+    const activated = Math.max(0, activeSteps.length - 1)
+    return Math.min(1, activated / (roadmapSteps.length - 1))
+  })()
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
@@ -599,7 +607,8 @@ export default function HomePage() {
                   height: `calc(100% - 48px - 48px)`,
                   background: "linear-gradient(to bottom, #FACC15, #EAB308)",
                   boxShadow: "0 0 10px rgba(250,204,21,0.5)",
-                  transform: `scaleY(${activeSteps.length > 0 ? Math.min(activeSteps.length / roadmapSteps.length, 1) : 0})`,
+                  transform: `scaleY(${filledRatio})`,
+                  transformOrigin: "top",
                   transition: "transform 0.8s ease-out",
                 }}
               />

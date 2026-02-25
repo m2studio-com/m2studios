@@ -26,7 +26,6 @@ import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { db, getFirestoreClient } from "@/lib/firebase"
-import { collection, query, where, getDocs } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge" // Import Badge component
 
 interface Order {
@@ -62,6 +61,12 @@ export default function ClientDashboard() {
       try {
         const dbInstance = db || (await getFirestoreClient())
         if (!dbInstance) throw new Error("Firestore is not initialized")
+
+        // Dynamically import Firestore helpers so they come from the same
+        // module instance as `dbInstance` to avoid cross-instance type errors.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const firestore = await import("firebase/firestore")
+        const { collection, query, where, getDocs } = firestore
 
         const simpleQuery = query(collection(dbInstance, "orders"), where("email", "==", user.email))
         const snapshot = await getDocs(simpleQuery)

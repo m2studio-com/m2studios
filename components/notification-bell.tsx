@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react"
 import { Bell } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { db } from "@/lib/firebase"
-import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, limit } from "firebase/firestore"
+import { db, getFirestoreClient } from "@/lib/firebase"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { NotificationDocument } from "@/lib/firestore-types"
@@ -20,31 +19,47 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    if (!user || !db) return
+    if (!user) return
 
-    const q = query(
-      collection(db, "notifications"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc"),
-      limit(10),
-    )
+    let unsubscribe: any = null
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs: Notification[] = []
-      snapshot.forEach((doc) => {
-        notifs.push({ id: doc.id, ...doc.data() } as Notification)
+    const start = async () => {
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) return
+
+      const firestore = await import("firebase/firestore")
+      const { collection, query, where, onSnapshot, orderBy, limit } = firestore
+
+      const q = query(
+        collection(dbInstance, "notifications"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(10),
+      )
+
+      unsubscribe = onSnapshot(q, (snapshot: any) => {
+        const notifs: Notification[] = []
+        snapshot.forEach((doc: any) => {
+          notifs.push({ id: doc.id, ...doc.data() } as Notification)
+        })
+        setNotifications(notifs)
+        setUnreadCount(notifs.filter((n) => !n.read).length)
       })
-      setNotifications(notifs)
-      setUnreadCount(notifs.filter((n) => !n.read).length)
-    })
+    }
 
-    return () => unsubscribe()
+    start()
+
+    return () => unsubscribe && unsubscribe()
   }, [user])
 
   const markAsRead = async (notificationId: string) => {
-    if (!db) return
     try {
-      await updateDoc(doc(db, "notifications", notificationId), {
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) return
+      const firestore = await import("firebase/firestore")
+      const { updateDoc, doc } = firestore
+
+      await updateDoc(doc(dbInstance, "notifications", notificationId), {
         read: true,
       })
     } catch (error) {
@@ -53,9 +68,17 @@ export function NotificationBell() {
   }
 
   const markAllAsRead = async () => {
-    if (!db) return
-    const unreadNotifs = notifications.filter((n) => !n.read)
-    await Promise.all(unreadNotifs.map((n) => updateDoc(doc(db, "notifications", n.id), { read: true })))
+    try {
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) return
+      const firestore = await import("firebase/firestore")
+      const { updateDoc, doc } = firestore
+
+      const unreadNotifs = notifications.filter((n) => !n.read)
+      await Promise.all(unreadNotifs.map((n) => updateDoc(doc(dbInstance, "notifications", n.id), { read: true })))
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error)
+    }
   }
 
   const getRelativeTime = (dateString: string) => {

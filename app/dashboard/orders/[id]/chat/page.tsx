@@ -12,8 +12,7 @@ import { useState, useEffect, useRef } from "react"
 import { Send, ArrowLeft, Paperclip, Loader2, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { collection, addDoc, query, where, orderBy, getDocs, Timestamp } from "firebase/firestore"
-import { db, storage } from "@/lib/firebase"
+import { db, storage, getFirestoreClient } from "@/lib/firebase"
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
 import { useAuth } from "@/lib/auth-context"
 import type { MessageDocument } from "@/lib/firestore-types"
@@ -39,13 +38,19 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchMessages = async () => {
-    if (!orderId || !db) {
+    if (!orderId) {
       setLoading(false)
       return
     }
 
     try {
-      const messagesRef = collection(db, "messages")
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) throw new Error("Firestore is not initialized")
+
+      const firestore = await import("firebase/firestore")
+      const { collection, query, where, orderBy, getDocs } = firestore
+
+      const messagesRef = collection(dbInstance, "messages")
       const q = query(messagesRef, where("orderId", "==", orderId), orderBy("createdAt", "asc"))
 
       const snapshot = await getDocs(q)
@@ -83,7 +88,10 @@ export default function ChatPage() {
 
     setSending(true)
     try {
-      const messageData: Omit<MessageDocument, "createdAt"> & { createdAt: Timestamp } = {
+      const firestore = await import("firebase/firestore")
+      const { Timestamp, addDoc, collection } = firestore
+
+      const messageData: Omit<MessageDocument, "createdAt"> & { createdAt: typeof Timestamp } = {
         orderId,
         senderId: user.uid,
         senderName: user.displayName || "You",
@@ -92,8 +100,9 @@ export default function ChatPage() {
         read: false,
         createdAt: Timestamp.now(),
       }
-
-      await addDoc(collection(db, "messages"), messageData)
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) throw new Error("Firestore is not initialized")
+      await addDoc(collection(dbInstance, "messages"), messageData)
       setNewMessage("")
       await fetchMessages()
     } catch (error) {
@@ -129,7 +138,10 @@ export default function ChatPage() {
         async () => {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
 
-          const messageData: Omit<MessageDocument, "createdAt"> & { createdAt: Timestamp } = {
+          const firestore = await import("firebase/firestore")
+          const { Timestamp, addDoc, collection } = firestore
+
+          const messageData: Omit<MessageDocument, "createdAt"> & { createdAt: typeof Timestamp } = {
             orderId,
             senderId: user.uid,
             senderName: user.displayName || "You",
@@ -140,8 +152,9 @@ export default function ChatPage() {
             read: false,
             createdAt: Timestamp.now(),
           }
-
-          await addDoc(collection(db, "messages"), messageData)
+          const dbInstance = db || (await getFirestoreClient())
+          if (!dbInstance) throw new Error("Firestore is not initialized")
+          await addDoc(collection(dbInstance, "messages"), messageData)
           setUploading(false)
           setUploadProgress(0)
           await fetchMessages()

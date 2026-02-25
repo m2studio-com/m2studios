@@ -5,8 +5,7 @@ import { Star, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { db } from "@/lib/firebase"
-import { collection, addDoc } from "firebase/firestore"
+import { db, getFirestoreClient } from "@/lib/firebase"
 import { useAuth } from "@/lib/auth-context"
 import type { ReviewDocument } from "@/lib/firestore-types"
 
@@ -25,7 +24,7 @@ export function ReviewModal({ orderId, serviceType, onClose, onSubmit }: ReviewM
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
-    if (!user || !db || rating === 0) return
+    if (!user || rating === 0) return
 
     setSubmitting(true)
     try {
@@ -40,7 +39,13 @@ export function ReviewModal({ orderId, serviceType, onClose, onSubmit }: ReviewM
         createdAt: new Date().toISOString(),
       }
 
-      await addDoc(collection(db, "reviews"), reviewData)
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) throw new Error("Firestore is not initialized")
+      // dynamic import to ensure same SDK instance
+      const firestore = await import("firebase/firestore")
+      const { collection, addDoc } = firestore
+
+      await addDoc(collection(dbInstance, "reviews"), reviewData)
       onSubmit()
       onClose()
     } catch (error) {

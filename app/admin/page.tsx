@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Package, Clock, CheckCircle, DollarSign, Eye, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { db, getFirestoreClient } from "@/lib/firebase"
 import type { OrderDocument } from "@/lib/firestore-types"
 
 interface Order extends OrderDocument {
@@ -23,26 +22,41 @@ export default function AdminDashboard() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
 
   useEffect(() => {
-    const ordersRef = collection(db, "orders")
-    const q = query(ordersRef, orderBy("createdAt", "desc"))
+    let unsubscribe: any = null
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const ordersData: Order[] = []
-        snapshot.forEach((doc) => {
-          ordersData.push({ id: doc.id, ...doc.data() } as Order)
-        })
-        setOrders(ordersData)
+    const start = async () => {
+      const dbInstance = db || (await getFirestoreClient())
+      if (!dbInstance) {
         setLoading(false)
-      },
-      (error) => {
-        console.error("[v0] Error fetching orders:", error)
-        setLoading(false)
-      },
-    )
+        return
+      }
 
-    return () => unsubscribe()
+      const firestore = await import("firebase/firestore")
+      const { collection, query, orderBy, onSnapshot } = firestore
+
+      const ordersRef = collection(dbInstance, "orders")
+      const q = query(ordersRef, orderBy("createdAt", "desc"))
+
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot: any) => {
+          const ordersData: Order[] = []
+          snapshot.forEach((doc: any) => {
+            ordersData.push({ id: doc.id, ...doc.data() } as Order)
+          })
+          setOrders(ordersData)
+          setLoading(false)
+        },
+        (error: any) => {
+          console.error("[v0] Error fetching orders:", error)
+          setLoading(false)
+        },
+      )
+    }
+
+    start()
+
+    return () => unsubscribe && unsubscribe()
   }, [])
 
   const filteredOrders = selectedStatus === "all" ? orders : orders.filter((order) => order.status === selectedStatus)

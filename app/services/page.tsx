@@ -210,47 +210,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Founders */}
-        <section className="py-12 px-4">
-          <div className="container mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4" style={{ color: "#FFFFFF" }}>
-                Meet Our Team
-              </h2>
-              <p className="max-w-2xl mx-auto leading-relaxed" style={{ color: "#9CA3AF" }}>
-                The creative minds behind M2 Studio
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {founders.map((founder, index) => (
-                <Card key={index} className="glass border-border overflow-hidden group">
-                  <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">
-                    <Image
-                      src={founder.image || "/placeholder.svg"}
-                      alt={founder.name}
-                      fill
-                      className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      priority={index < 2}
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-2xl font-bold mb-1" style={{ color: "#FFFFFF" }}>
-                      {founder.name}
-                    </h3>
-                    <p className="mb-4" style={{ color: "#FACC15" }}>
-                      {founder.role}
-                    </p>
-                    <p className="leading-relaxed" style={{ color: "#D1D5DB" }}>
-                      {founder.bio}
-                    </p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Founders section removed from Services page (kept on About page) */}
 
         {/* Values */}
         <section className="py-12 px-4">

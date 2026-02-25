@@ -175,3 +175,25 @@ export function isGoogleProviderAvailable() {
 
 export { auth, storage, db, isConfigValid, googleProvider }
 export default app
+
+// Safe async getter for Firestore client to ensure `db` is initialized
+export async function getFirestoreClient() {
+  if (db) return db
+  if (typeof window === "undefined") return null
+
+  try {
+    // Use dynamic import to match bundler ESM instances
+    const firebaseApp = await import("firebase/app")
+    const firebaseFirestore = await import("firebase/firestore")
+
+    const init = firebaseApp.initializeApp
+    const apps = firebaseApp.getApps
+    const _app = apps().length === 0 ? init(firebaseConfig) : apps()[0]
+    app = _app
+    db = firebaseFirestore.getFirestore(app)
+    return db
+  } catch (err) {
+    console.error("[Firebase] getFirestoreClient error:", err)
+    return null
+  }
+}

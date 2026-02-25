@@ -25,7 +25,7 @@ import {
 import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { db } from "@/lib/firebase"
+import { db, getFirestoreClient } from "@/lib/firebase"
 import { collection, query, where, getDocs } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge" // Import Badge component
 
@@ -60,7 +60,10 @@ export default function ClientDashboard() {
       let ordersData: Order[] = []
 
       try {
-        const simpleQuery = query(collection(db, "orders"), where("email", "==", user.email))
+        const dbInstance = db || (await getFirestoreClient())
+        if (!dbInstance) throw new Error("Firestore is not initialized")
+
+        const simpleQuery = query(collection(dbInstance, "orders"), where("email", "==", user.email))
         const snapshot = await getDocs(simpleQuery)
 
         ordersData = snapshot.docs.map((doc) => {

@@ -1,5 +1,9 @@
 // Firebase configuration and initialization
-import { initializeApp, getApps } from "firebase/app"
+// NOTE: avoid importing `firebase/app` at module top-level so server-side
+// builds (Next 16) don't evaluate browser-only SDK code. We'll lazily
+// require `firebase/app` inside the client-only block below.
+let initializeApp: any = null
+let getApps: any = null
 
 // Client-only Firebase initialization. This file can be safely imported on the
 // server without triggering browser-only SDK initialization.
@@ -50,6 +54,12 @@ if (!isConfigValid && typeof window !== "undefined") {
 
 if (typeof window !== "undefined") {
   try {
+    // Lazily require firebase/app in the browser to avoid server-side errors
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const firebaseApp = require("firebase/app")
+    initializeApp = firebaseApp.initializeApp
+    getApps = firebaseApp.getApps
+
     // Import browser-only parts inside the client block to avoid server-side
     // initialization errors during SSR or in API routes.
     // eslint-disable-next-line @typescript-eslint/no-var-requires

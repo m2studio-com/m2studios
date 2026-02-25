@@ -1,16 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  updateProfile,
-  signInWithPopup,
-  type User as FirebaseUser,
-} from "firebase/auth"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import type { User as FirebaseUser } from "firebase/auth"
 import { auth, db, isConfigValid, getGoogleProvider } from "./firebase"
 
 // User type
@@ -45,6 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       return
     }
+
+    // Dynamically require auth/firestore helpers inside the client-only effect
+    // to avoid importing firebase/* at module evaluation time which can create
+    // duplicate SDK instances and registration issues.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { onAuthStateChanged } = require("firebase/auth")
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { doc, getDoc } = require("firebase/firestore")
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
@@ -88,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { signInWithEmailAndPassword } = require("firebase/auth")
       await signInWithEmailAndPassword(auth, email, password)
     } catch (error: any) {
       console.error("[v0] Firebase sign in error:", error.code, error.message)
@@ -117,6 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { createUserWithEmailAndPassword, updateProfile } = require("firebase/auth")
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { doc, setDoc } = require("firebase/firestore")
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
@@ -160,6 +166,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { signInWithPopup } = require("firebase/auth")
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { doc, getDoc, setDoc } = require("firebase/firestore")
+
       const result = await signInWithPopup(auth, googleProvider)
       const user = result.user
 
@@ -199,6 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { signOut: firebaseSignOut } = require("firebase/auth")
       await firebaseSignOut(auth)
       setUser(null)
 

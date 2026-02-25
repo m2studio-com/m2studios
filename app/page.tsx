@@ -617,17 +617,19 @@ export default function HomePage() {
                 const isActive = activeSteps.includes(index)
                 const isFirstStep = index === 0
                 const isLastStep = index === roadmapSteps.length - 1
+                const delayMs = index * 160
+                const delay = `${delayMs}ms`
+                const ease = "cubic-bezier(0.22,1,0.36,1)"
 
                 return (
                   <div key={index} className="relative">
                     <div
                       className={`relative flex items-center ${isLastStep ? "" : "mb-12"} ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}
-                      style={{
-                        opacity: isActive || isFirstStep ? 1 : 0,
-                        transform: isActive || isFirstStep ? "translateY(0)" : "translateY(40px)",
-                        transition: "opacity 0.6s ease-out, transform 0.6s ease-out",
-                        transitionDelay: `${index * 150}ms`,
-                      }}
+                        style={{
+                          opacity: isActive || isFirstStep ? 1 : 0,
+                          transform: isActive || isFirstStep ? "translateY(0)" : "translateY(40px)",
+                          transition: `opacity 0.65s ${ease} ${delay}, transform 0.85s ${ease} ${delay}`,
+                        }}
                     >
                       <div
                         className={`ml-20 md:ml-0 md:w-[calc(50%-40px)] ${index % 2 === 0 ? "md:pr-8 md:text-right" : "md:pl-8 md:text-left"}`}
@@ -661,8 +663,10 @@ export default function HomePage() {
                         className="absolute left-10 md:left-1/2 transform -translate-x-1/2 w-12 h-12 rounded-full flex items-center justify-center z-10 transition-all duration-500"
                         style={{
                           background: isActive ? "#FACC15" : "#1a1a1a",
-                          boxShadow: isActive ? "0 0 20px rgba(250,204,21,0.6), 0 0 40px rgba(250,204,21,0.3)" : "none",
-                          transitionDelay: `${index * 150}ms`,
+                          boxShadow: isActive
+                            ? "0 0 20px rgba(250,204,21,0.6), 0 0 40px rgba(250,204,21,0.3)"
+                            : "none",
+                          transition: `background 0.45s ${ease} ${delay}, box-shadow 0.9s ${ease} ${delay}`,
                         }}
                       >
                         {isActive && (
@@ -670,7 +674,7 @@ export default function HomePage() {
                             className="absolute inset-0 rounded-full animate-ping"
                             style={{
                               background: "rgba(250,204,21,0.3)",
-                              animationDuration: "1.5s",
+                              animationDuration: "1.2s",
                               animationIterationCount: "1",
                             }}
                           />
@@ -679,8 +683,7 @@ export default function HomePage() {
                           size={20}
                           style={{
                             color: isActive ? "#000000" : "#FACC15",
-                            transition: "color 0.5s ease",
-                            transitionDelay: `${index * 150}ms`,
+                            transition: `color 0.6s ${ease} ${delay}`,
                           }}
                         />
                       </div>

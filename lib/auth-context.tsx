@@ -99,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // store unsubscribe so outer effect can clean up
       unsubscribeFn = unsubscribe
 
+    }
+
     // start async setup
     setupAndSubscribe()
 

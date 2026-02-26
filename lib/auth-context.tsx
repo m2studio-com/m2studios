@@ -186,55 +186,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signInWithGoogle = async () => {
-    if (!isConfigValid || !auth || !db) {
-      const err: any = new Error("Firebase is not configured or Auth service is unavailable.")
-      err.code = "auth/no-auth-instance"
-      throw err
-    }
-
-    const googleProvider = getGoogleProvider()
-    if (!googleProvider) {
-      console.error("[Auth] Google provider is null after getGoogleProvider()")
-      const err: any = new Error("Google authentication is not available. Try refreshing the page.")
-      err.code = "auth/argument-error"
-      throw err
-    }
-
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { signInWithPopup } = require("firebase/auth")
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { doc, getDoc, setDoc } = require("firebase/firestore")
+      // Ensure auth and db are initialized from client helpers
+      const authClient = auth || (await getAuthClient())
+      const dbClient = db || (await getFirestoreClient())
 
-      const result = await signInWithPopup(auth, googleProvider)
+      if (!isConfigValid || !authClient) {
+        const err: any = new Error("Firebase is not configured or Auth service is unavailable.")
+        err.code = "auth/no-auth-instance"
+        throw err
+      }
+
+      // Use dynamic ESM imports so the provider and auth come from same module instance
+      const authModule = await import("firebase/auth")
+      const firestoreModule = await import("firebase/firestore")
+      const { GoogleAuthProvider, signInWithPopup } = authModule
+      const { doc, getDoc, setDoc } = firestoreModule
+
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(authClient, provider)
       const user = result.user
 
       // Check if user document exists, if not create it
-      const userDoc = await getDoc(doc(db, "users", user.uid))
-      if (!userDoc.exists()) {
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          role: "client",
-          createdAt: new Date().toISOString(),
-          provider: "google",
-        })
+      if (dbClient) {
+        const userDoc = await getDoc(doc(dbClient, "users", user.uid))
+        if (!userDoc.exists()) {
+          await setDoc(doc(dbClient, "users", user.uid), {
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            role: "client",
+            createdAt: new Date().toISOString(),
+            provider: "google",
+          })
+        }
       }
     } catch (error: any) {
-      console.error("[Firebase] Google sign in error:", error.code, error.message)
-      if (error.code === "auth/popup-closed-by-user") {
+      console.error("[Firebase] Google sign in error:", error?.code, error?.message || error)
+      if (error?.code === "auth/popup-closed-by-user") {
         throw new Error("Sign-in popup was closed. Please try again.")
-      } else if (error.code === "auth/popup-blocked") {
+      } else if (error?.code === "auth/popup-blocked") {
         throw new Error("Sign-in popup was blocked. Please allow popups for this site.")
-      } else if (error.code === "auth/cancelled-popup-request") {
+      } else if (error?.code === "auth/cancelled-popup-request") {
         throw new Error("Sign-in was cancelled. Please try again.")
-      } else if (error.code === "auth/network-request-failed") {
+      } else if (error?.code === "auth/network-request-failed") {
         throw new Error("Network error. Please check your internet connection.")
-      } else if (error.code === "auth/argument-error") {
+      } else if (error?.code === "auth/argument-error") {
         throw new Error("Google sign-in configuration error. Please refresh the page and try again.")
       } else {
-        throw new Error(error.message || "Failed to sign in with Google. Please try again.")
+        throw new Error(error?.message || "Failed to sign in with Google. Please try again.")
       }
     }
   }

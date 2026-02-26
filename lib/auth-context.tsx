@@ -62,38 +62,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { onAuthStateChanged } = await import("firebase/auth")
       const { doc, getDoc } = await import("firebase/firestore")
 
-      const unsubscribe = onAuthStateChanged(authClient, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        try {
-            if (!dbClient) {
-              console.error("[Firebase] Firestore is not configured.")
+      const unsubscribe = onAuthStateChanged(
+        authClient,
+        async (firebaseUser: FirebaseUser | null) => {
+          if (firebaseUser) {
+            try {
+              if (!dbClient) {
+                console.error("[Firebase] Firestore is not configured.")
+                setUser(null)
+                setLoading(false)
+                return
+              }
+
+              const userDoc = await getDoc(doc(dbClient, "users", firebaseUser.uid))
+              const userData = userDoc.data()
+
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName,
+                role: userData?.role || "client",
+                photoURL: userData?.photoURL,
+                provider: userData?.provider,
+              })
+            } catch (error) {
+              console.error("[Firebase] Error fetching user data:", error)
               setUser(null)
-              setLoading(false)
-              return
             }
+          } else {
+            setUser(null)
+          }
+          setLoading(false)
+        },
+      )
 
-            const userDoc = await getDoc(doc(dbClient, "users", firebaseUser.uid))
-          const userData = userDoc.data()
-
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            role: userData?.role || "client",
-            photoURL: userData?.photoURL,
-            provider: userData?.provider,
-          })
-        } catch (error) {
-          console.error("[Firebase] Error fetching user data:", error)
-          setUser(null)
-        }
-      } else {
-        setUser(null)
-      }
-      setLoading(false)
       // store unsubscribe so outer effect can clean up
       unsubscribeFn = unsubscribe
-    }
 
     // start async setup
     setupAndSubscribe()

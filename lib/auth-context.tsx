@@ -40,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let authClient = auth
     let dbClient = db
 
+    let unsubscribeFn: (() => void) | null = null
+
     const setupAndSubscribe = async () => {
       if (!authClient) {
         authClient = await getAuthClient()
@@ -89,13 +91,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
       }
       setLoading(false)
-      return () => unsubscribe()
+      // store unsubscribe so outer effect can clean up
+      unsubscribeFn = unsubscribe
     }
 
     // start async setup
     setupAndSubscribe()
 
-    // no explicit cleanup here (unsubscribe handled in setup)
+    // cleanup: call unsubscribe if setup created it
+    return () => {
+      try {
+        if (unsubscribeFn) unsubscribeFn()
+      } catch (e) {
+        /* ignore */
+      }
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {

@@ -190,3 +190,41 @@ export async function getFirestoreClient() {
     return null
   }
 }
+
+// Safe async getter for Auth client to ensure `auth` is initialized
+export async function getAuthClient() {
+  if (auth) return auth
+  if (typeof window === "undefined") return null
+
+  try {
+    const firebaseApp = await import("firebase/app")
+    const firebaseAuth = await import("firebase/auth")
+
+    const init = firebaseApp.initializeApp
+    const apps = firebaseApp.getApps
+    const _app = apps().length === 0 ? init(firebaseConfig) : apps()[0]
+    app = _app
+    const { getAuth, browserSessionPersistence, setPersistence } = firebaseAuth
+    auth = getAuth(app)
+
+    if (auth && typeof setPersistence === "function") {
+      setPersistence(auth, browserSessionPersistence).catch((error: any) => {
+        console.error("[Firebase] Error setting session persistence (getAuthClient):", error)
+      })
+    }
+
+    try {
+      // initialize google provider if possible
+      const { GoogleAuthProvider } = firebaseAuth
+      googleProvider = new GoogleAuthProvider()
+      googleProviderAvailable = true
+    } catch (err) {
+      // ignore
+    }
+
+    return auth
+  } catch (err) {
+    console.error("[Firebase] getAuthClient error:", err)
+    return null
+  }
+}

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { User as FirebaseUser } from "firebase/auth"
-import { auth, db, isConfigValid, getGoogleProvider } from "./firebase"
+import { auth, db, isConfigValid, getGoogleProvider, getAuthClient, getFirestoreClient } from "./firebase"
 
 // User type
 interface User {
@@ -31,31 +31,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isConfigValid || !auth) {
+    if (!isConfigValid) {
       console.error("[Auth] Firebase is not properly configured. Please check environment variables.")
       setLoading(false)
       return
     }
 
-    // Dynamically require auth/firestore helpers inside the client-only effect
-    // to avoid importing firebase/* at module evaluation time which can create
-    // duplicate SDK instances and registration issues.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { onAuthStateChanged } = require("firebase/auth")
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { doc, getDoc } = require("firebase/firestore")
+    let authClient = auth
+    let dbClient = db
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    const setupAndSubscribe = async () => {
+      if (!authClient) {
+        authClient = await getAuthClient()
+      }
+      if (!dbClient) {
+        dbClient = await getFirestoreClient()
+      }
+
+      if (!authClient) {
+        console.error("[Auth] Firebase Auth service is unavailable after initialization.")
+        setLoading(false)
+        return
+      }
+
+      // Dynamically import auth/firestore helpers inside the client-only effect
+      // to avoid importing firebase/* at module evaluation time which can create
+      // duplicate SDK instances and registration issues.
+      const { onAuthStateChanged } = await import("firebase/auth")
+      const { doc, getDoc } = await import("firebase/firestore")
+
+      const unsubscribe = onAuthStateChanged(authClient, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         try {
-          if (!db) {
-            console.error("[Firebase] Firestore is not configured.")
-            setUser(null)
-            setLoading(false)
-            return
-          }
+            if (!dbClient) {
+              console.error("[Firebase] Firestore is not configured.")
+              setUser(null)
+              setLoading(false)
+              return
+            }
 
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+            const userDoc = await getDoc(doc(dbClient, "users", firebaseUser.uid))
           const userData = userDoc.data()
 
           setUser({
@@ -74,9 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
       }
       setLoading(false)
-    })
+      return () => unsubscribe()
+    }
 
-    return () => unsubscribe()
+    // start async setup
+    setupAndSubscribe()
+
+    // no explicit cleanup here (unsubscribe handled in setup)
   }, [])
 
   const signIn = async (email: string, password: string) => {

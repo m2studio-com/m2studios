@@ -13,7 +13,6 @@ import { Send, ArrowLeft, Paperclip, Loader2, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { db, storage, getFirestoreClient } from "@/lib/firebase"
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
 import { useAuth } from "@/lib/auth-context"
 import type { MessageDocument } from "@/lib/firestore-types"
 
@@ -121,6 +120,9 @@ export default function ChatPage() {
     setUploadProgress(0)
 
     try {
+      const storageMod = await import("firebase/storage")
+      const { ref, uploadBytesResumable, getDownloadURL } = storageMod
+
       const storageRef = ref(storage, `chat-files/${orderId}/${Date.now()}_${file.name}`)
       const uploadTask = uploadBytesResumable(storageRef, file)
 

@@ -210,7 +210,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-6xl mx-auto justify-items-center">
+            <div className="grid grid-cols-1 gap-8 max-w-3xl mx-auto justify-items-center">
               {founders.map((founder, index) => (
                 <Card key={index} className="glass border-border overflow-hidden group max-w-sm w-full">
                   <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">

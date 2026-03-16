@@ -57,10 +57,10 @@ function AnimatedCounter({
 export default function AboutPage() {
   const founders = [
     {
-      name: "Mama",
+      name: "Abishek U",
       role: "Founder & Lead Editor",
       image: "/founder-mama.jpg",
-      bio: "With 8+ years of experience in video editing and post-production, Mama founded M2 Studio to help creators worldwide achieve their creative vision.",
+      bio: "With 8+ years of experience in video editing and post-production, Abishek founded M2 Studio to help creators worldwide achieve their creative vision.",
     },
     {
       name: "Developer",

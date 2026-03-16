@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { adminDb } from "@/lib/firebaseAdmin"
+import crypto from "crypto"
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -93,75 +94,74 @@ export async function POST(request: Request) {
     // Send to Discord webhook
     if (discordWebhook) {
       try {
+        // create HMAC signatures for approve/reject links
+        const secret = process.env.DISCORD_INTERACTION_SECRET || process.env.SECRET || ""
+        const makeSig = (id: string | null, action: string) =>
+          crypto.createHmac("sha256", secret).update(`${id || ""}:${action}`).digest("hex")
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || ""
+
+        const approveSig = makeSig(orderId, "approve")
+        const rejectSig = makeSig(orderId, "reject")
+
+        const approveUrl = `${baseUrl}/api/discord/interaction?orderId=${encodeURIComponent(
+          orderId || ""
+        )}&action=approve&sig=${encodeURIComponent(approveSig)}`
+        const rejectUrl = `${baseUrl}/api/discord/interaction?orderId=${encodeURIComponent(
+          orderId || ""
+        )}&action=reject&sig=${encodeURIComponent(rejectSig)}`
+
         await fetch(discordWebhook, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: "🎬 New order received! <@&1449513575918997584> <@&1449513702419075092> <@&1449513679128236115>",
-          embeds: [
-            {
-              title: "📦 New M2 Studio Order",
-              color: 0xfacc15,
-              fields: [
-                {
-                  name: "🆔 Order ID",
-                  value: orderId || "Not saved",
-                  inline: true,
-                },
-                {
-                  name: "👤 Name",
-                  value: formData.fullName,
-                  inline: true,
-                },
-                {
-                  name: "📧 Email",
-                  value: formData.email,
-                  inline: true,
-                },
-                {
-                  name: "📱 WhatsApp",
-                  value: formData.whatsapp,
-                  inline: true,
-                },
-                {
-                  name: "🎯 Service",
-                  value: formData.serviceType,
-                  inline: true,
-                },
-                {
-                  name: "💰 Budget",
-                  value: formData.budget || "Not specified",
-                  inline: true,
-                },
-                {
-                  name: "📅 Deadline",
-                  value: formData.deadline || "Not specified",
-                  inline: true,
-                },
-                {
-                  name: "📝 Description",
-                  value: formData.projectDescription.substring(0, 1024),
-                  inline: false,
-                },
-                {
-                  name: "🔗 Raw Files",
-                  value: formData.rawFileLink || "Not provided",
-                  inline: false,
-                },
-              ],
-              timestamp: new Date().toISOString(),
-              footer: {
-                text: "M2 Studio Orders",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content: "🎬 New order received! <@&1449513575918997584> <@&1449513702419075092> <@&1449513679128236115>",
+            embeds: [
+              {
+                title: "📦 New M2 Studio Order",
+                color: 0xfacc15,
+                fields: [
+                  { name: "🆔 Order ID", value: orderId || "Not saved", inline: true },
+                  { name: "👤 Name", value: formData.fullName, inline: true },
+                  { name: "📧 Email", value: formData.email, inline: true },
+                  { name: "📱 WhatsApp", value: formData.whatsapp, inline: true },
+                  { name: "🎯 Service", value: formData.serviceType, inline: true },
+                  { name: "💰 Budget", value: formData.budget || "Not specified", inline: true },
+                  { name: "📅 Deadline", value: formData.deadline || "Not specified", inline: true },
+                  { name: "📝 Description", value: formData.projectDescription.substring(0, 1024), inline: false },
+                  { name: "🔗 Raw Files", value: formData.rawFileLink || "Not provided", inline: false },
+                ],
+                timestamp: new Date().toISOString(),
+                footer: { text: "M2 Studio Orders" },
               },
-            },
-          ],
-        }),
-      })
-    } catch (error) {
-      // Discord webhook error - silent fail
-    }
+            ],
+            // Add URL buttons that open your interaction endpoint to approve/reject the order
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    style: 5,
+                    label: "Approve",
+                    url: approveUrl,
+                  },
+                  {
+                    type: 2,
+                    style: 5,
+                    label: "Reject",
+                    url: rejectUrl,
+                  },
+                ],
+              },
+            ],
+          }),
+        })
+      } catch (error) {
+        // Discord webhook error - silent fail
+      }
     }
 
     if (googleSheetsWebhook) {

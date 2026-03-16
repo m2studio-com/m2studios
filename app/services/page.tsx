@@ -63,12 +63,6 @@ export default function AboutPage() {
       bio: "With 8+ years of experience in video editing and post-production, Mama founded M2 Studio to help creators worldwide achieve their creative vision.",
     },
     {
-      name: "Madhan",
-      role: "Co-Founder & Creative Director",
-      image: "/co-founder-madhan.jpg",
-      bio: "A passionate storyteller with expertise in cinematic editing and motion graphics. Brings every project to life with creative excellence.",
-    },
-    {
       name: "Developer",
       role: "Lead Developer",
       image: "/professional-developer-portrait.png",

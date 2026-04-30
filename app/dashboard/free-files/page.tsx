@@ -39,12 +39,11 @@ const freeFilesData = {
         icon: "🎬",
         color: "#9999FF",
         versions: [
-          { name: "AE 2025 (v25.31.003)", link: "#", isNew: true },
-          { name: "AE 2024", link: "#" },
-          { name: "AE 2023", link: "#" },
-          { name: "AE 2022", link: "#" },
-          { name: "AE 2021", link: "#" },
-          { name: "AE 2020", link: "#" },
+          { name: "AE 2025", link: "#" },
+          { name: "AE 2024", link: "https://drive.google.com/file/d/1qT-yZPlkcYeubKRcqhY49vwS8io5ycF5/view?usp=sharing" },
+          { name: "AE 2023", link: "https://drive.google.com/file/d/18ipC8WAWxvqGwEtXcXxp_49y8g1aqDlY/view?usp=sharing" },
+          { name: "AE 2022", link: "https://drive.google.com/file/d/1KB6E3EoO6mtCND7h27feYscvxeSkmmoi/view?usp=sharing" },
+          { name: "AE 2020", link: "https://drive.google.com/file/d/117bVAoTZU940aVKUckUsmmyidX7u-3TZ/view?usp=sharing" },
         ],
       },
       {
@@ -53,11 +52,10 @@ const freeFilesData = {
         color: "#9999FF",
         versions: [
           { name: "Pr 2025", link: "#", isNew: true },
-          { name: "Pr 2024", link: "#" },
-          { name: "Pr 2023", link: "#" },
-          { name: "Pr 2022", link: "#" },
-          { name: "Pr 2021", link: "#" },
-          { name: "Pr 2020", link: "#" },
+          { name: "Pr 2024", link: "https://drive.google.com/file/d/1fWV0dzq1mpa2MPnh8pj_sJuI2M-V9HMs/view?usp=sharing" },
+          { name: "Pr 2023", link: "https://drive.google.com/file/d/1fRy8EPiIOw365PCU5MWDgeUyaX4uOBcY/view?usp=sharing" },
+          { name: "Pr 2022", link: "https://drive.google.com/file/d/12Qpjbw3nrCTZAFwQciRcyA31InqsVBO_/view?usp=sharing" },
+          { name: "Pr 2020", link: "https://drive.google.com/file/d/15YQDGjnf3RWCye_9gOtU3gaZmIz8zNBL/view?usp=sharing" },
         ],
       },
       {
@@ -66,9 +64,10 @@ const freeFilesData = {
         color: "#31A8FF",
         versions: [
           { name: "Ps 2025 (v26.8.1.8)", link: "#", isNew: true },
-          { name: "Ps 2024", link: "#" },
-          { name: "Ps 2023", link: "#" },
-          { name: "Ps 2022", link: "#" },
+          { name: "Ps 2024", link: "https://drive.google.com/file/d/1NMtUsJfPWiJBAx4eRnpep7aJAMGav_Gh/view?usp=sharing" },
+          { name: "Ps 2023", link: "https://drive.google.com/file/d/19sxhIA7uh-CfVFlbv2p5xUfjv4i3VYG_/view?usp=sharing" },
+          { name: "Ps 2022", link: "https://drive.google.com/file/d/1GBBnooZkmWEVa2b4wB8ic_DghRi0i202/view?usp=sharing" },
+          { name: "Ps 2020", link: "https://drive.google.com/file/d/13FzELthJDrh5T-h76ALauBI7vA1gvKGt/view?usp=sharing" }
         ],
       },
       {
@@ -77,9 +76,10 @@ const freeFilesData = {
         color: "#FF9A00",
         versions: [
           { name: "Ai 2025", link: "#", isNew: true },
-          { name: "Ai 2024", link: "#" },
-          { name: "Ai 2023", link: "#" },
-          { name: "Ai 2022", link: "#" },
+          { name: "Ai 2024", link: "https://drive.google.com/file/d/1bd9Mu_O_u_vmqJr614RZm9G3-Orjl79a/view?usp=sharing" },
+          { name: "Ai 2023", link: " https://drive.google.com/file/d/1nx3B0qjsZmFtM2x9xzPZtHotKFL9ccRS/view?usp=sharing" },
+          { name: "Ai 2022", link: "https://drive.google.com/file/d/1jv6Bs-31-ZtaC7yqcI0os2AIv81kg1-2/view?usp=sharing" },
+          { name: "Ai 2020", link: " https://drive.google.com/file/d/1nx3B0qjsZmFtM2x9xzPZtHotKFL9ccRS/view?usp=sharing" },
         ],
       },
       {
@@ -88,8 +88,10 @@ const freeFilesData = {
         color: "#9999FF",
         versions: [
           { name: "ME 2025", link: "#", isNew: true },
-          { name: "ME 2024", link: "#" },
-          { name: "ME 2023", link: "#" },
+          { name: "ME 2024", link: "https://drive.google.com/file/d/1jaC6qWEN8jeMJe4n3JiqN4CjSAptPHLQ/view?usp=sharing" },
+          { name: "ME 2023", link: "https://drive.google.com/file/d/1Hc6C3miuy1JsBKjHwJCvCBMmxwb3MY58/view?usp=sharing" },
+          { name: "ME 2022", link: "https://drive.google.com/file/d/1zZCDYs-IOMJ1ACjQxlDMw5RJ27dnoxkA/view?usp=sharing" },
+          { name: "ME 2020", link: "https://drive.google.com/file/d/1e7FaMWhY6IfEYPsE7zeFO9Np3zmwvVZQ/view?usp=sharing" },
         ],
       },
     ],
